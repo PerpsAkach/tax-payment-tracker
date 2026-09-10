@@ -1,19 +1,102 @@
-# Tax Payment Tracker
+# Tax Payment Tracking System
 
-> Flask/SQLite web application for tracking quarterly tax obligations and payments with partial-payment support, cent-accurate monetary handling, status calculation, annual reporting, and CSV export.
+> Portfolio reconstruction and engineering extension of a verified Spring 2024 CSIT 555 team project: a tax-payment tracking system built around Flask, MySQL, Docker Compose, CRUD workflows, and reporting services.
 
 [![Portfolio](https://img.shields.io/badge/Portfolio-perpsakach.github.io-d7ff5f?style=flat-square&labelColor=11151a)](https://perpsakach.github.io/)
-![Flask](https://img.shields.io/badge/Flask-Web%20Application-111827?style=flat-square)
-![SQLite](https://img.shields.io/badge/SQLite-Persistence-0f80cc?style=flat-square)
-![Status](https://img.shields.io/badge/Status-Portfolio%20Reconstruction-6b7280?style=flat-square)
+![Flask](https://img.shields.io/badge/Flask-Web%20Services-111827?style=flat-square)
+![MySQL](https://img.shields.io/badge/Historical-MySQL-4479A1?style=flat-square)
+![Docker](https://img.shields.io/badge/Historical-Docker%20Compose-2496ED?style=flat-square)
+![Status](https://img.shields.io/badge/Status-Verified%20Team%20Project%20%2B%20Enhanced%20Reconstruction-6b7280?style=flat-square)
 
-## Overview
+## Historical project verification
 
-This project addresses a recurring record-keeping problem: tracking quarterly obligations, multiple payments, confirmation information, remaining balances, and annual totals without relying on a fragile spreadsheet-only workflow.
+This project is now grounded in the original **CSIT 555_01 SP24 — Database Systems** final-project documentation submitted on April 27, 2024.
 
-The application is deliberately a **payment-tracking tool**, not a legal tax-liability calculator.
+The document identifies **Final Project: Group 5** and lists six team members:
 
-## Domain model
+- Dianah Mutanda
+- Michael Gluck
+- Noah Mengich
+- **Perps Ndiege**
+- Sarah Bober
+- Sarmad Sohail
+
+The team report links the original public repository:
+
+**https://github.com/migluck/csit555final**
+
+The historical report describes a tax and payment tracking system with a web UI, database-backed records, quarterly estimated-tax tracking, CRUD operations, payment/reporting controllers, and local web endpoints.
+
+### Attribution boundary
+
+This repository does **not** claim that I individually authored every component of the original group system. The historical evidence establishes my membership in the six-person project team, while the original Git commit metadata visible today primarily identifies other team accounts. Accordingly, this portfolio version distinguishes team-level historical facts from the current implementation work in this repository.
+
+## Historical architecture
+
+Repository history for the original team project shows a containerized architecture that evolved during development. At its fuller stage it included:
+
+```mermaid
+flowchart TD
+    U[Browser] --> RP[Reporting / Web UI]
+    RP --> PR[Payment Record Service]
+    PR --> DB[(MySQL)]
+    TC[Tax Calculation Service] --> PR
+
+    subgraph Docker Compose Network
+      RP
+      PR
+      TC
+      DB
+    end
+```
+
+The original development history also contains an earlier Nginx reverse-proxy design and later simplification/integration work. This makes the historical project useful as a database-systems and service-integration case study rather than merely a single-file CRUD application.
+
+## Historical functionality recovered
+
+From the original report and repository history, the team project demonstrably included or worked toward:
+
+- Flask-based web services
+- MySQL relational persistence
+- Docker and Docker Compose
+- payment-record management
+- reporting/web presentation
+- service-to-service HTTP communication
+- CRUD operations: create, read, update, delete
+- database schema and indexes
+- quarterly tax-payment record tracking
+- filtering and tax-summary UI behavior
+- health/service endpoints during container development
+
+The original report describes quarterly estimated tax due dates of April 15, June 15, September 15, and January 15 of the following year. This portfolio does not treat those dates as universal tax advice; they are documented historical project requirements.
+
+## Current portfolio implementation
+
+The code in **this repository** is an enhanced reconstruction designed to preserve the original domain while improving several engineering decisions.
+
+The current implementation uses Flask with a local SQLite persistence layer for portability and adds:
+
+- explicit `TaxPeriod` → `Payment` parent-child modeling
+- multiple partial payments per tracked period
+- integer-cent monetary storage instead of binary floating point
+- `Decimal` parsing at input boundaries
+- user-entered due dates rather than hard-coded legal assumptions
+- derived payment-status summaries
+- annual reporting and CSV export
+- database constraints and validation
+- testable service logic
+
+This means the repository intentionally has two layers of provenance:
+
+```text
+2024 VERIFIED TEAM PROJECT
+Flask + MySQL + Docker Compose + CRUD + reporting/services
+                    ↓
+CURRENT PORTFOLIO RECONSTRUCTION
+Flask + portable SQLite + stronger domain model + safer money handling + tests/reporting
+```
+
+## Current domain model
 
 ```mermaid
 erDiagram
@@ -40,40 +123,27 @@ erDiagram
     }
 ```
 
-Separating `TaxPeriod` from `Payment` allows one quarterly obligation to be paid in multiple partial transactions.
+Separating `TaxPeriod` from `Payment` allows one quarterly obligation to be represented by multiple partial payment transactions instead of forcing one database row to represent both the obligation and its payment history.
 
-## Application architecture
+## Current architecture
 
 ```mermaid
 flowchart TD
-    U[Browser] --> R[Flask Routes]
+    U[Browser / API Client] --> R[Flask Routes]
     R --> V[Validation]
     V --> S[Service Logic]
-    S --> P[SQLite Repository]
-    P --> DB[(Tax Periods + Payments)]
+    S --> P[Repository Layer]
+    P --> DB[(SQLite - Portfolio Runtime)]
     DB --> Q[Quarterly Summary]
     DB --> A[Annual Report]
     A --> C[CSV Export]
 ```
 
-## Core features
+The historical project used MySQL and Docker Compose. SQLite is used here to make the portfolio implementation easy to run locally; it is an **enhancement/reconstruction choice**, not a claim about the historical database.
 
-- year and quarter tracking;
-- jurisdiction / authority field;
-- multiple payments per tax period;
-- user-entered due dates;
-- tracked obligation, paid amount, and remaining balance;
-- payment method and confirmation number;
-- `PAID`, `PARTIALLY PAID`, `UNPAID`, and `OVERDUE` statuses;
-- annual summaries;
-- CSV export;
-- SQLite persistence;
-- server-rendered Flask/Jinja UI;
-- automated tests.
+## Money handling improvement
 
-## Money handling
-
-Financial values are stored as integer cents rather than binary floating-point dollars.
+The historical SQL schema used floating-point storage for `amount`. The portfolio reconstruction instead stores financial values as integer cents:
 
 ```text
 $1,234.56 -> 123456 cents
@@ -94,92 +164,62 @@ R = max(0, E - P)
 Then:
 
 ```text
-R = 0                         -> PAID
+R = 0                          -> PAID
 0 < P < E and before due date -> PARTIALLY PAID
 P = 0 and before due date     -> UNPAID
 R > 0 and after due date      -> OVERDUE
 ```
 
-`OVERDUE` only means the **user-entered tracked due date has passed with a remaining balance**. It is not a legal determination of penalty, delinquency, or tax authority treatment.
+`OVERDUE` only means the **user-entered tracked due date has passed with a remaining balance**. It is not a legal determination of penalty, delinquency, or tax-authority treatment.
 
-## Routes
+## Current API / route scope
 
-```text
-GET  /
-GET  /periods
-GET/POST /periods/new
-GET      /periods/<id>
-GET/POST /periods/<id>/edit
-POST     /periods/<id>/delete
-
-GET/POST /periods/<id>/payments/new
-GET/POST /payments/<id>/edit
-POST     /payments/<id>/delete
-
-GET /reports/year/<year>
-GET /reports/year/<year>.csv
-```
-
-## Database integrity
-
-The reconstructed schema includes:
-
-- quarter check: 1–4;
-- non-negative tracked amount;
-- positive payment amount;
-- foreign-key enforcement;
-- unique `(tax_year, quarter, jurisdiction)` periods;
-- unique non-empty payment confirmation numbers.
-
-SQLite foreign-key enforcement is explicitly enabled per connection with:
-
-```sql
-PRAGMA foreign_keys = ON;
-```
-
-## Quick start
-
-```bash
-pip install -r requirements.txt
-flask --app run.py init-db
-flask --app run.py seed-db
-flask --app run.py run --debug
-```
-
-Run tests:
-
-```bash
-pytest -q
-```
+The present portfolio code exposes a compact Flask interface around tax periods and payments. The repository is intentionally positioned as a tracking and record-management application, not a tax-filing engine.
 
 ## Scope boundary
 
-The application does **not**:
+The portfolio implementation does **not**:
 
-- calculate legally correct federal/state tax liability;
-- file tax returns;
-- transmit tax payments;
-- connect directly to the IRS or a state authority;
-- calculate penalties or safe-harbor rules.
+- calculate legally correct federal or state tax liability
+- file tax returns
+- transmit tax payments
+- connect directly to the IRS or a state tax authority
+- calculate penalties or safe-harbor rules
 
 It tracks user-entered obligations and payment records.
 
 ## What this project demonstrates
 
-- Flask server-rendered application development
-- SQLite and relational persistence
-- CRUD workflows
-- parent/child data modeling
+### Historical team project
+
+- collaborative database-systems development
+- Flask application/service development
+- MySQL relational persistence
+- Docker / Docker Compose
+- service integration over HTTP
+- CRUD and reporting workflows
+- web UI and database integration
+
+### Current engineering extension
+
+- provenance-aware reconstruction
+- parent-child relational modeling
 - cent-accurate financial arithmetic
-- validation and transactions
-- reporting and CSV export
-- testable business logic
+- validation and status logic
+- portable development persistence
+- reporting and CSV output
+- testable service-layer design
 
 ## Provenance
 
-The original project is recovered at the **Python + Flask + SQLite + HTML/CSS + quarterly tax-payment CRUD** level. Exact historical source bytes and page/schema details are unavailable, so the current implementation is explicitly reconstructed and enhanced.
+This repository uses four evidence labels:
 
-See [`PROVENANCE.md`](PROVENANCE.md).
+- **RECOVERED** — supported by the original 2024 Group 5 report and/or original GitHub history
+- **RECONSTRUCTED** — current code rebuilt from the verified project domain and requirements where original source attribution is not individual-specific
+- **ENHANCED** — modern improvements added in this portfolio repository
+- **UNVERIFIED** — any individual contribution claim not directly supported by available evidence
+
+See [`PROVENANCE.md`](PROVENANCE.md) and [`docs/HISTORICAL_PROJECT.md`](docs/HISTORICAL_PROJECT.md).
 
 ## Portfolio
 
